@@ -8,6 +8,7 @@ The API receives hashes/templates from the scanner integration. It does not
 talk directly to USB hardware and does not store raw fingerprint images.
 """
 from django.utils import timezone
+from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -23,6 +24,7 @@ from .serializers import BiometricEnrollSerializer, BiometricVerifySerializer
 class BiometricEnrollView(APIView):
     permission_classes = [IsAdminOrOfficer]
 
+    @extend_schema(request=BiometricEnrollSerializer, responses=dict)
     def post(self, request):
         serializer = BiometricEnrollSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -48,6 +50,7 @@ class BiometricEnrollView(APIView):
 class BiometricVerifyView(APIView):
     permission_classes = [IsAdminOrOfficerOrStaff]
 
+    @extend_schema(request=BiometricVerifySerializer, responses=dict)
     def post(self, request):
         serializer = BiometricVerifySerializer(data=request.data)
         serializer.is_valid(raise_exception=True)

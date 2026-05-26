@@ -14,7 +14,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 env = environ.Env(DEBUG=(bool, False))
 environ.Env.read_env(BASE_DIR / ".env")
 
-SECRET_KEY = env("DJANGO_SECRET_KEY", default="change-me-before-production")
+SECRET_KEY = env("DJANGO_SECRET_KEY", default="change-me-before-production-use-a-64-character-secret")
 DEBUG = env("DEBUG")
 ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["localhost", "127.0.0.1"])
 
@@ -123,6 +123,9 @@ SPECTACULAR_SETTINGS = {
     "TITLE": "Secure Biometric Disciplinary API",
     "DESCRIPTION": "DRF API for student disciplinary records, biometric verification, reporting, and audit logs.",
     "VERSION": "1.0.0",
+    "ENUM_NAME_OVERRIDES": {
+        "CaseSeverityEnum": "apps.cases.models.DisciplinaryCase.Severity",
+    },
 }
 
 LANGUAGE_CODE = "en-us"

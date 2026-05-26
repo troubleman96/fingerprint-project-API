@@ -12,6 +12,7 @@ from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView
+from drf_spectacular.utils import extend_schema
 
 from utils.permissions import IsAdmin
 from utils.response import api_response
@@ -29,6 +30,7 @@ class LoginView(TokenObtainPairView):
 class MeView(APIView):
     """Return the authenticated user's current profile."""
 
+    @extend_schema(responses=UserReadSerializer)
     def get(self, request):
         return Response(api_response(success=True, data=UserReadSerializer(request.user).data))
 

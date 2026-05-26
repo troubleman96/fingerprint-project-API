@@ -10,6 +10,7 @@ from datetime import timedelta
 
 from django.db.models import Count
 from django.utils import timezone
+from drf_spectacular.utils import extend_schema
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -22,6 +23,7 @@ from utils.response import api_response
 class DashboardStatsView(APIView):
     permission_classes = [IsAdminOrOfficer]
 
+    @extend_schema(responses=dict)
     def get(self, request):
         now = timezone.now()
         month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)

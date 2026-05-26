@@ -35,7 +35,19 @@ class CaseListSerializer(serializers.ModelSerializer):
 class CaseCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = DisciplinaryCase
-        fields = ["student", "incident_type", "severity", "description", "date_of_incident", "location", "assigned_to"]
+        fields = [
+            "id",
+            "case_number",
+            "student",
+            "incident_type",
+            "severity",
+            "status",
+            "description",
+            "date_of_incident",
+            "location",
+            "assigned_to",
+        ]
+        read_only_fields = ["id", "case_number", "status"]
 
 
 class CaseNoteSerializer(serializers.ModelSerializer):
