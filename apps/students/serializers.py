@@ -68,7 +68,7 @@ class StudentDetailSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
-        read_only_fields = ["id", "full_name", "biometric_enrolled", "registered_by", "created_at", "updated_at"]
+        read_only_fields = ["id", "full_name", "biometric_enrolled", "is_active", "registered_by", "created_at", "updated_at"]
 
     def create(self, validated_data):
         validated_data["registered_by"] = self.context["request"].user
