@@ -6,129 +6,141 @@
 - **Framework:** Django 5.0 + Django REST Framework
 - **App server:** Gunicorn (included in production requirements)
 - **Database:** PostgreSQL (SQLite for local dev only)
-- **Media files:** Local filesystem or object storage (S3-compatible)
-- **Reverse proxy:** Nginx (recommended)
+- **Media files:** Local filesystem
+- **Reverse proxy:** Nginx
+- **Server:** `captainhugo@vps3376277`
+- **API domain:** `https://api-finger-print.simamia.online`
+- **Project path:** `~/projects/finger-print/API`
 
 ---
 
 ## Environment Variables
 
-Create a `.env` file at the project root (never commit it). All variables below are required in production.
+Create a `.env` file at `~/projects/finger-print/API/.env` (never commit it).
 
 ```env
 # Django core
 DJANGO_SECRET_KEY=<64-character random string>
 DEBUG=False
-ALLOWED_HOSTS=yourdomain.com,www.yourdomain.com
+ALLOWED_HOSTS=api-finger-print.simamia.online
 DJANGO_SETTINGS_MODULE=config.settings.production
 
 # Database (PostgreSQL)
-DATABASE_URL=postgres://USER:PASSWORD@HOST:5432/DB_NAME
+DATABASE_URL=postgres://USER:PASSWORD@localhost:5432/fingerprint_db
 
-# CORS — comma-separated list of frontend origins
-CORS_ALLOWED_ORIGINS=https://yourdomain.com,https://www.yourdomain.com
+# CORS — UI origin(s)
+CORS_ALLOWED_ORIGINS=https://finger-print.simamia.online
 
 # Media files
 MEDIA_URL=/media/
-MEDIA_ROOT=/var/www/iyyah/media
+MEDIA_ROOT=/home/captainhugo/projects/finger-print/API/media
 
 # Timezone
 TIME_ZONE=Africa/Dar_es_Salaam
 
-# Optional: Sentry error tracking (production requirements include sentry-sdk)
+# Optional: Sentry
 SENTRY_DSN=https://...@sentry.io/...
 ```
 
 Generate a secure `DJANGO_SECRET_KEY`:
 ```bash
-python -c "import secrets; print(secrets.token_urlsafe(64))"
+python3 -c "import secrets; print(secrets.token_urlsafe(64))"
 ```
 
 ---
 
 ## First-Time Server Setup
 
-### 1. Clone and install dependencies
+### 1. The repo is already cloned
 
 ```bash
-git clone git@github.com:troubleman96/fingerprint-project-API.git
-cd fingerprint-project-API
+# Already done:
+# cd ~/projects/finger-print/API
+# git clone git@github.com:troubleman96/fingerprint-project-API.git .
+```
+
+### 2. Create the virtualenv and install dependencies
+
+```bash
+cd ~/projects/finger-print/API
 python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements/production.txt
+.venv/bin/pip install -r requirements/production.txt
 ```
 
-### 2. Create the `.env` file
-
-Copy the template above and fill in real values.
-
-### 3. Run migrations
+### 3. Create the `.env` file
 
 ```bash
-python manage.py migrate
+nano ~/projects/finger-print/API/.env
+# paste the env block above with real values
 ```
 
-### 4. Collect static files
+### 4. Run migrations
 
 ```bash
-python manage.py collectstatic --noinput
+.venv/bin/python manage.py migrate
 ```
 
-### 5. Seed initial data (first deploy only)
+### 5. Collect static files
 
 ```bash
-python manage.py seed
+.venv/bin/python manage.py collectstatic --noinput
 ```
 
-To wipe and re-seed from scratch:
+### 6. Seed initial data (first deploy only)
+
 ```bash
-python manage.py seed --flush
+.venv/bin/python manage.py seed
 ```
 
-### 6. Create a superuser (optional — seed already creates admin@email.com)
+To wipe and re-seed:
+```bash
+.venv/bin/python manage.py seed --flush
+```
+
+### 7. Create a superuser (optional — seed already creates admin@email.com)
 
 ```bash
-python manage.py createsuperuser
+.venv/bin/python manage.py createsuperuser
 ```
 
 ---
 
-## Running with Gunicorn
+## Running with Gunicorn (manual test)
 
 ```bash
-source .venv/bin/activate
-gunicorn config.wsgi:application \
+cd ~/projects/finger-print/API
+.venv/bin/gunicorn config.wsgi:application \
   --workers 3 \
   --bind 0.0.0.0:8000 \
-  --timeout 120 \
-  --access-logfile /var/log/iyyah/access.log \
-  --error-logfile /var/log/iyyah/error.log
+  --timeout 120
 ```
+
+Visit `http://vps3376277:8000/api/` to confirm it responds before wiring up Nginx.
 
 **Worker count rule of thumb:** `(2 × CPU cores) + 1`
 
 ---
 
-## Systemd Service (recommended)
+## Systemd Service
 
-Create `/etc/systemd/system/iyyah-api.service`:
+Create `/etc/systemd/system/fingerprint-api.service`:
 
 ```ini
 [Unit]
-Description=Iyyah API (Gunicorn)
+Description=Fingerprint API (Gunicorn)
 After=network.target
 
 [Service]
-User=www-data
-Group=www-data
-WorkingDirectory=/var/www/iyyah/API
-EnvironmentFile=/var/www/iyyah/API/.env
-ExecStart=/var/www/iyyah/API/.venv/bin/gunicorn config.wsgi:application \
+User=captainhugo
+Group=captainhugo
+WorkingDirectory=/home/captainhugo/projects/finger-print/API
+EnvironmentFile=/home/captainhugo/projects/finger-print/API/.env
+ExecStart=/home/captainhugo/projects/finger-print/API/.venv/bin/gunicorn config.wsgi:application \
           --workers 3 \
-          --bind unix:/run/iyyah-api.sock \
+          --bind unix:/run/fingerprint-api.sock \
           --timeout 120 \
-          --access-logfile /var/log/iyyah/access.log \
-          --error-logfile /var/log/iyyah/error.log
+          --access-logfile /home/captainhugo/projects/finger-print/API/logs/access.log \
+          --error-logfile /home/captainhugo/projects/finger-print/API/logs/error.log
 Restart=on-failure
 RestartSec=5
 
@@ -136,36 +148,48 @@ RestartSec=5
 WantedBy=multi-user.target
 ```
 
+Create the logs directory first:
+```bash
+mkdir -p ~/projects/finger-print/API/logs
+```
+
 Enable and start:
 ```bash
 sudo systemctl daemon-reload
-sudo systemctl enable iyyah-api
-sudo systemctl start iyyah-api
-sudo systemctl status iyyah-api
+sudo systemctl enable fingerprint-api
+sudo systemctl start fingerprint-api
+sudo systemctl status fingerprint-api
+```
+
+Check logs:
+```bash
+sudo journalctl -u fingerprint-api -f
 ```
 
 ---
 
 ## Nginx Configuration
 
+Create `/etc/nginx/sites-available/fingerprint-api`:
+
 ```nginx
 server {
     listen 80;
-    server_name yourdomain.com www.yourdomain.com;
+    server_name api-finger-print.simamia.online;
     return 301 https://$host$request_uri;
 }
 
 server {
     listen 443 ssl;
-    server_name yourdomain.com www.yourdomain.com;
+    server_name api-finger-print.simamia.online;
 
-    ssl_certificate     /etc/letsencrypt/live/yourdomain.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/yourdomain.com/privkey.pem;
+    ssl_certificate     /etc/letsencrypt/live/api-finger-print.simamia.online/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/api-finger-print.simamia.online/privkey.pem;
 
     client_max_body_size 20M;
 
-    location /api/ {
-        proxy_pass         http://unix:/run/iyyah-api.sock;
+    location / {
+        proxy_pass         http://unix:/run/fingerprint-api.sock;
         proxy_set_header   Host $host;
         proxy_set_header   X-Real-IP $remote_addr;
         proxy_set_header   X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -173,23 +197,30 @@ server {
     }
 
     location /media/ {
-        alias /var/www/iyyah/media/;
+        alias /home/captainhugo/projects/finger-print/API/media/;
         expires 30d;
         add_header Cache-Control "public, immutable";
     }
 
     location /static/ {
-        alias /var/www/iyyah/static/;
+        alias /home/captainhugo/projects/finger-print/API/staticfiles/;
         expires 1y;
         add_header Cache-Control "public, immutable";
     }
 }
 ```
 
-Test and reload:
+Enable the site:
 ```bash
+sudo ln -s /etc/nginx/sites-available/fingerprint-api /etc/nginx/sites-enabled/
 sudo nginx -t
 sudo systemctl reload nginx
+```
+
+### SSL Certificate (Certbot)
+
+```bash
+sudo certbot --nginx -d api-finger-print.simamia.online
 ```
 
 ---
@@ -197,26 +228,24 @@ sudo systemctl reload nginx
 ## Deploying Updates
 
 ```bash
-cd /var/www/iyyah/API
+cd ~/projects/finger-print/API
 git pull origin master
-source .venv/bin/activate
-pip install -r requirements/production.txt
-python manage.py migrate --noinput
-python manage.py collectstatic --noinput
-sudo systemctl restart iyyah-api
+.venv/bin/pip install -r requirements/production.txt
+.venv/bin/python manage.py migrate --noinput
+.venv/bin/python manage.py collectstatic --noinput
+sudo systemctl restart fingerprint-api
 ```
 
 ---
 
-## Development Server (local only)
+## Development Server (local machine only)
 
 ```bash
-source .venv/bin/activate
-# or on this machine:
+# Local machine — venv python doesn't activate via source on this setup
 .venv/bin/python manage.py runserver
 ```
 
-Uses `config.settings.development` automatically via `manage.py`. SQLite is the default database when `DATABASE_URL` is not set.
+Uses `config.settings.development` by default. SQLite is used when `DATABASE_URL` is not set.
 
 ---
 
@@ -230,18 +259,18 @@ Uses `config.settings.development` automatically via `manage.py`. SQLite is the 
 | reviewer@email.com | Iyyah@2024 | OFFICER |
 | support@email.com | Iyyah@2024 | STAFF |
 
-Change all passwords immediately after first login on any production or staging environment.
+Change all passwords immediately after first login on the server.
 
 ---
 
-## Key URLs
+## Key URLs (production)
 
 | URL | Purpose |
 |---|---|
-| `/api/` | API root |
-| `/api/docs/` | API documentation |
-| `/api/schema/` | OpenAPI schema (JSON) |
-| `/admin/` | Django admin panel |
+| `https://api-finger-print.simamia.online/api/` | API root |
+| `https://api-finger-print.simamia.online/api/docs/` | API documentation |
+| `https://api-finger-print.simamia.online/api/schema/` | OpenAPI schema |
+| `https://api-finger-print.simamia.online/admin/` | Django admin |
 
 ---
 
@@ -251,6 +280,6 @@ Change all passwords immediately after first login on any production or staging 
 |---|---|---|
 | Development | `config/settings/development.py` | `DEBUG=True`, `ALLOWED_HOSTS=*`, SQLite default |
 | Production | `config/settings/production.py` | `DEBUG=False`, HTTPS forced, HSTS enabled |
-| `DJANGO_SETTINGS_MODULE` | `.env` | Must be set to `config.settings.production` on server |
+| `DJANGO_SETTINGS_MODULE` | `.env` | Set to `config.settings.production` on server |
 
-The `wsgi.py` defaults to `config.settings.production`, so Gunicorn picks up the right settings automatically as long as the `.env` is present.
+`wsgi.py` defaults to `config.settings.production`, so Gunicorn picks up the right settings automatically as long as `.env` is present.
