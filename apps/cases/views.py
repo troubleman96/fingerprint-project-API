@@ -1,6 +1,7 @@
 """Disciplinary case API endpoints.
 
 Router-generated endpoints:
+    GET    /api/incident-types/
     GET    /api/cases/
     POST   /api/cases/
     GET    /api/cases/<uuid>/
@@ -24,8 +25,9 @@ from utils.permissions import IsAdminOrOfficer, IsAdminOrOfficerOrStaff
 from utils.response import api_response
 
 from .filters import CaseFilter
-from .models import CaseDocument, CaseNote, DisciplinaryCase
+from .models import CaseDocument, CaseNote, DisciplinaryCase, IncidentType
 from .serializers import (
+    IncidentTypeSerializer,
     CaseCreateSerializer,
     CaseDetailSerializer,
     CaseDocumentSerializer,
@@ -34,6 +36,15 @@ from .serializers import (
     CaseStatusTransitionSerializer,
 )
 from .services import transition_case_status
+
+
+class IncidentTypeViewSet(viewsets.ReadOnlyModelViewSet):
+    """Read-only list of active incident types for UI dropdowns."""
+
+    queryset = IncidentType.objects.filter(is_active=True).order_by("name")
+    serializer_class = IncidentTypeSerializer
+    permission_classes = [IsAdminOrOfficerOrStaff]
+    pagination_class = None
 
 
 class DisciplinaryCaseViewSet(viewsets.ModelViewSet):

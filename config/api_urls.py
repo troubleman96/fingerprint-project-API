@@ -11,7 +11,7 @@ from rest_framework_simplejwt.views import TokenRefreshView
 from apps.accounts.views import LoginView, MeView, UserDetailView, UserListCreateView
 from apps.audit.views import AuditLogListView
 from apps.biometric.views import BiometricEnrollView, BiometricVerifyView
-from apps.cases.views import DisciplinaryCaseViewSet
+from apps.cases.views import DisciplinaryCaseViewSet, IncidentTypeViewSet
 from apps.reports.views import DashboardStatsView
 from apps.students.views import DepartmentViewSet, StudentViewSet
 
@@ -19,6 +19,7 @@ router = DefaultRouter()
 router.register(r"departments", DepartmentViewSet, basename="departments")
 router.register(r"students", StudentViewSet, basename="students")
 router.register(r"cases", DisciplinaryCaseViewSet, basename="cases")
+router.register(r"incident-types", IncidentTypeViewSet, basename="incident-types")
 
 urlpatterns = [
     path("auth/login/", LoginView.as_view(), name="login"),
