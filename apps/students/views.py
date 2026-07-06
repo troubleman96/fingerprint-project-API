@@ -11,12 +11,13 @@ Router-generated endpoints:
     DELETE /api/students/<uuid>/          -> soft-deactivates
     GET    /api/students/<uuid>/cases/    -> cases for one student
 """
-from django.db.models import Count
+from django.db.models import Count, ProtectedError
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from utils.permissions import IsAdminOrOfficer, IsAdminOrOfficerOrStaff
+from apps.notifications.services import send_sms
+from utils.permissions import IsAdmin, IsAdminOrOfficer, IsAdminOrOfficerOrStaff
 from utils.response import api_response
 
 from .filters import StudentFilter
@@ -53,11 +54,35 @@ class StudentViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         return StudentListSerializer if self.action == "list" else StudentDetailSerializer
 
+    def perform_create(self, serializer):
+        student = serializer.save()
+        if student.phone:
+            send_sms(
+                to=student.phone,
+                message=f"DisciplineTrack: {student.full_name} ({student.reg_number}) has been registered in the system.",
+            )
+
     def destroy(self, request, *args, **kwargs):
         student = self.get_object()
         student.is_active = False
         student.save(update_fields=["is_active"])
         return Response(api_response(success=True, message="Student deactivated"), status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=["delete"], url_path="purge", permission_classes=[IsAdmin])
+    def purge(self, request, pk=None):
+        """Permanently delete a student record (Admin only) — unlike DELETE, which only deactivates."""
+        student = self.get_object()
+        try:
+            student.delete()
+        except ProtectedError:
+            return Response(
+                api_response(
+                    success=False,
+                    message="Cannot permanently delete — this student has case history. Deactivate instead.",
+                ),
+                status=status.HTTP_409_CONFLICT,
+            )
+        return Response(api_response(success=True, message="Student permanently deleted"), status=status.HTTP_200_OK)
 
     @action(detail=True, methods=["get"], url_path="cases")
     def cases(self, request, pk=None):

@@ -21,6 +21,7 @@ from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
+from apps.notifications.services import send_sms
 from utils.permissions import IsAdminOrOfficer, IsAdminOrOfficerOrStaff
 from utils.response import api_response
 
@@ -75,7 +76,13 @@ class DisciplinaryCaseViewSet(viewsets.ModelViewSet):
         return [IsAdminOrOfficer()]
 
     def perform_create(self, serializer):
-        serializer.save(reported_by=self.request.user)
+        case = serializer.save(reported_by=self.request.user)
+        if case.assigned_to and case.assigned_to.phone:
+            send_sms(
+                to=case.assigned_to.phone,
+                message=f"DisciplineTrack: new case {case.case_number} has been assigned to you.",
+                case=case,
+            )
 
     @action(detail=True, methods=["post"], url_path="transition")
     def transition(self, request, pk=None):

@@ -42,6 +42,7 @@ LOCAL_APPS = [
     "apps.biometric",
     "apps.cases",
     "apps.reports",
+    "apps.notifications",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -144,3 +145,11 @@ CORS_ALLOWED_ORIGINS = env.list(
     default=["http://localhost:3000", "http://localhost:5173"],
 )
 CORS_ALLOW_CREDENTIALS = True
+
+# SMS (apps.notifications) — "console" (default) just logs to SmsLog with no
+# real sending; set SMS_PROVIDER=sendafrica once SENDAFRICA_API_KEY is real
+# and providers.SendAfricaProvider's endpoint/payload are confirmed.
+SMS_PROVIDER = env("SMS_PROVIDER", default="console")
+SENDAFRICA_API_KEY = env("SENDAFRICA_API_KEY", default="")
+SENDAFRICA_BASE_URL = env("SENDAFRICA_BASE_URL", default="https://api.sendafrica.online")
+SENDAFRICA_SENDER_ID = env("SENDAFRICA_SENDER_ID", default="")
