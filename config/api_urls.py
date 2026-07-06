@@ -8,7 +8,14 @@ from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenRefreshView
 
-from apps.accounts.views import LoginView, MeView, UserDetailView, UserListCreateView
+from apps.accounts.views import (
+    LoginView,
+    MeView,
+    StaffBiometricEnrollView,
+    StaffBiometricLoginView,
+    UserDetailView,
+    UserListCreateView,
+)
 from apps.audit.views import AuditLogListView
 from apps.biometric.views import BiometricEnrollView, BiometricVerifyView
 from apps.cases.views import DisciplinaryCaseViewSet, IncidentTypeViewSet
@@ -26,6 +33,8 @@ urlpatterns = [
     path("auth/login/", LoginView.as_view(), name="login"),
     path("auth/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     path("auth/me/", MeView.as_view(), name="me"),
+    path("auth/biometric/enroll/", StaffBiometricEnrollView.as_view(), name="staff_biometric_enroll"),
+    path("auth/biometric/login/", StaffBiometricLoginView.as_view(), name="staff_biometric_login"),
     path("users/", UserListCreateView.as_view(), name="user_list"),
     path("users/<int:pk>/", UserDetailView.as_view(), name="user_detail"),
     path("biometric/enroll/", BiometricEnrollView.as_view(), name="biometric_enroll"),

@@ -71,3 +71,22 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     @property
     def is_officer(self):
         return self.role == Role.OFFICER
+
+
+class StaffBiometricCredential(models.Model):
+    """A staff/admin user's own fingerprint, used to log into the app itself.
+
+    Distinct from apps.biometric.BiometricTemplate, which identifies students
+    for case work — this is purely an alternative login credential.
+    """
+
+    user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, related_name="biometric_credential")
+    template_hash = models.CharField(max_length=64, unique=True)
+    finger_used = models.CharField(max_length=20, blank=True)
+    enrolled_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "staff_biometric_credentials"
+
+    def __str__(self):
+        return f"Biometric login for {self.user.email}"

@@ -51,3 +51,12 @@ class UserWriteSerializer(serializers.ModelSerializer):
             instance.set_password(password)
         instance.save()
         return instance
+
+
+class StaffBiometricEnrollSerializer(serializers.Serializer):
+    template_hash = serializers.RegexField(regex=r"^[a-fA-F0-9]{64}$")
+    finger_used = serializers.CharField(required=False, default="", allow_blank=True)
+
+
+class StaffBiometricLoginSerializer(serializers.Serializer):
+    template_hash = serializers.RegexField(regex=r"^[a-fA-F0-9]{64}$")
