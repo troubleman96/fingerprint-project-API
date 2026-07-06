@@ -13,6 +13,8 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.accounts.models import CustomUser, Role
+from apps.notifications.services import send_sms
 from apps.students.models import Student
 from utils.permissions import IsAdminOrOfficer, IsAdminOrOfficerOrStaff
 from utils.response import api_response
@@ -44,6 +46,18 @@ class BiometricEnrollView(APIView):
         )
         student.biometric_enrolled = True
         student.save(update_fields=["biometric_enrolled"])
+
+        if student.phone:
+            send_sms(
+                to=student.phone,
+                message=f"DisciplineTrack: your fingerprint has been enrolled successfully, {student.first_name}.",
+            )
+        for admin in CustomUser.objects.filter(role=Role.ADMIN, is_active=True).exclude(phone=""):
+            send_sms(
+                to=admin.phone,
+                message=f"DisciplineTrack: fingerprint enrolled for {student.full_name} ({student.reg_number}) by {request.user.full_name}.",
+            )
+
         return Response(api_response(success=True, message="Student biometric enrolled successfully"))
 
 
